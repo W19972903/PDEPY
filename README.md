@@ -1,5 +1,5 @@
-Python code for the examples in the paper "Automatic pre- and post-conditions for partial differential equations"
-by Michele Boreale, October 2019
+This repository contains Python code for the examples in the paper "Automatic pre- and post-conditions for partial differential equations"
+by Michele Boreale (October 2019); pdf of the paper also in the repository. 
 
 Summary.
 Given a set of PDE systems ("stratified system"), the POST algorithm computes (weakest) 
