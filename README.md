@@ -3,7 +3,7 @@ by Michele Boreale (February 2020). The pdf of the paper is also in this reposit
 
 Summary.
 Given a set of PDE systems ("stratified system"), the POST algorithm computes (weakest) 
-preconditions and (strongest) postconditions as specified below (subject to certain restrictions; 
+preconditions and (strongest) postconditions as specified in the code (subject to certain restrictions; 
 see paper).
 
 Usage: see code.
