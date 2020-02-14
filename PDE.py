@@ -1,30 +1,38 @@
 # -*- coding: utf-8 -*-
 """
-Last modified on Fri Oct 25 13:07:54 2019
+Last modified on February 14, 2020, 15:52
+
+PDE IVP, v.2.
 
 @author: Michele Boreale
 
-Python code for the examples in the paper "Automatic pre- and post-conditions for partial differential equations"
-by Michele Boreale, October 2019
+Python code for the examples in the paper "Automatic pre- and postconditions for partial differential equations"
+by Michele Boreale 
 
 Summary
 Given a set of PDE systems ("stratified system"), the POST algorithm computes (weakest) 
 preconditions and (strongest) postconditions as specified below (subject to certain restrictions; 
 see paper).
 
-Code tested under the Anaconda distribution for Windows 10.
+Code tested under the Python Anaconda distribution for Windows 10.
 
 ########## USAGE ###################################################################################
 
+From the Python console, import the script with:
+
+from PDE import *
+
+Main procedures.
+
 _ = initvar(indepX=['t','x'],dependU=['u'],maxder=4,extrader=None)
-Defines independent variables, and dependent variables and all their derivatives up to order maxder; these will be 
+Defines and introduce independent variables, and dependent variables with all their derivatives up to order maxder; these will be 
 these will be accessible in the global variable Xlist; optional argument extrader permits more flexible definitions of derivatives (see examples)
 
 qt,J = post(pt,H,P,Plist,Monotony=False)
 INPUT:
-pt = polynomial template (possibly defined with genpt, see examples)
-H  = list of subsystems, defining the coherent (cf. paper), stratified system (boundary problem) to analyse. *NB: coherence is not checked!*
-P  = list of polynomials, defining the variety V(P) of initial boundary conditions. The set of ind. variables X (Xlist) will be included automatically.
+pt = (autonomous) polynomial template (possibly defined with genpt, see examples)
+H  = list of (autonomous) subsystems, defining the coherent, afp (cf. paper), stratified system (boundary problem) to analyse. *NB: coherence is not checked!*
+P  = list of (autonomous) polynomials, defining the variety V(P) of initial conditions. 
 Plist = list of parameters appearing in pt
 Monotony = True: monotonic search optimization will be used, leading to a more efficient algorithm. 
            This is *heuristic*.
@@ -36,11 +44,16 @@ qt = result template with s parameters. The set of instantiations of qt, qt[R^s]
 J =  (Groebner basis of the) ideal defining the weakest  precondition of qt[R^s].
 If maxiter iterations are exceeded, the execution stops with a warning.
 
-Other useful functions.
-pt,pl=genpt(vars,n)  :  generates the complete polynomial template pt of total degree n 
+
+OTHER useful functions.
+pt,pl=genpt(vars,n)  : generates the complete polynomial template pt of total degree n 
                        with indeterminates in the list vars, and the corresponding list of 
                        parameters pl
-taylor(p,H,n=3,mord='grlex') : Taylor expansion of differential polynomial p up to order n
+taylor(p,H,n=3,mord='grlex') : Taylor expansion of the differential polynomial p up to order n
+
+NT,T=findCL(H,P0=[],base=[],degree=2) : NT (nontrivial) + T (trivial) is a basis of polynomial Conservation Laws (density-flux pairs) 
+                                        of deg<=degree, with indeterminates in the given base, for the IVP H with initial data in V(P0).
+                                        Works only for the case of 2 independent variables t,x.
 
 
 ########## SYNTAX ##################################################################################
@@ -65,18 +78,18 @@ u(0,x)=c*x+b
 We want to find all valid polynomial postconditions of total degree <=3. 
 Try the following snippet.
 
-_=initvar(['t','x'],['c','b','u'],maxder=1)
-eq1b=[(u10,-u00*u01),(c10,0),(c01,0),(b10,0)]
-eq2b=[(u01,c00),(b01,0)]
+_=initvar(['t','x'],['c','b','u','s','r'],maxder=1) # s=t, r=x
+eq1b=[(u10,-u00*u01),(b10,0),(c10,0),(c01,0),(s10,1),(s01,0), (r10,0), (r01,1)]
+eq2b=[(u01,b00),(b01,0)]
 C1b=(eq1b,[t,x])
 C2b=(eq2b,[x])
 Hb=[C1b,C2b]  
-P0b=[u00-b00]
-pvb=[c00, b00, u00]
-pt,pl=genpt([t,x]+pvb,3)  # generates complete polynomial template of total degree 3 with indeterminates {t,x,c00, b00, u00}
-qt,J=DC(pt,Hb,P0b,pl)
-Poly(qt/1,pl)/1        # pretty printing of qt. Setting the only parameter of qt to 1 yields the equation u(t,x)=(c*x+b)/(c*t+1)
-solve(Poly(qt/1,pl).coeffs(),[u00],dict=True)   # finds an explicit formula for the solution u
+P0b=[u00-c00,s00,r00]
+pvb=[c00, b00, u00, s00, r00]
+pt,pl=genpt(pvb,3)  # generates complete polynomial template of total degree 3 with indeterminates {t,x,c, b, u}
+qt,J=post(pt,Hb,P0b,pl)
+Poly(qt,pl)/1        # pretty printing of qt. Setting the only parameter of qt to 1 yields the equation u(t,x)=(c*x+b)/(c*t+1)
+solve(qt,[u00],dict=True)   # finds an explicit formula for the solution u
 
 
 2) HEAT EQUATION
@@ -89,22 +102,23 @@ Try the following snippet.
 
 _=initvar(['t','x'],['a','b','c','d','f','g','h','j','i','u'],maxder=1,extrader={'u':':2_(:3)'})
 C1=([(u1_0, b00*u0_2),(a10, 0),(a01, 0),(b10, 0),(b01, 0),(c10, 0),(d01, 0),(f10, 0),(g10, 0),(h01, 0),(i10, 0),(i01, 0),(j10, 0),(j01, 0)],[t, x])
-C2=([(u0_1, g00), (f01, -c00*g00), (g01, c00*f00), (c01,0)], [x])
+C2=([(u0_0, g00), (f01, -c00*g00), (g01, c00*f00), (c01,0)], [x])
 C3=([(h10, -d00*h00),(d10, 0)], [t])
 Heat= [C1, C2, C3]
 a1,e=var('a1,e')  # dummy variables
 pt=a1*a00*(u0_0+i00*g00*h00+j00*f00*h00) 
 P0=[a00]  
-_,J=DC(pt,Heat,P0,[a1])
+_,J=post(pt,Heat,P0,[a1])
 J1=GroebnerBasis(list(J)+[a00-1,f00-1,g00,h00-1,c00*e-1],Xlist+[e],domain='QQ')  # build a set of new equations with specific values for a00,f00,g00,h00 and c00!=0
 solve(J1,[i00,j00,d00,c00,e],dict=True)  # replace the values obtained here for i00,j00,d00 in E, then solve for u
 
-3) A boundary problem
-(u_x)^2+(u_y)^2=1
+
+3) A BOUNDARY PROBLEM
+(u_x)^2+(u_y)^2=1 (Eikonal equation)
 u=0 on the unit circle
 
-A standard transformation with the method of characteristics
-makes this equivalent to an IVP in the (r,s)-coordinates
+A standard transformation by the method of characteristics
+makes this equivalent to an IVP in the (r,s)-variables
 
 x_s=2p
 y_s=2q
@@ -122,13 +136,29 @@ S2=[(x10,-q00),(y10,p00),(z10,0),(p10,-q00),(q10,p00)]
 HC=[(S1,[r,s]),(S2,[r])]
 P0=[z00,x00-1,y00,p00-1,q00]
 pt,pl=genpt([x00,y00,z00],2)
-qt,J=DC(pt,HC,P0,pl)
+qt,J=post(pt,HC,P0,pl)
 solve(Poly(qt/1,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
+
+
+4) CONSERVATION LAWS FOR A WAVE EQUATION IVP
+u_tt=u_xx, u_t(0,x)=0, u(0,x)=A*sin(x)+B*cos(x)  (A,B arbitrary constants)
+
+_=initvar(['t','x'],['u','v','w'],maxder=1,extrader={'u':':3_(:3)'})
+Hw=[([(u2_0, u0_2),   (v10, 0),   (w10, 0)], [t, x]),
+    ([(u1_0, 0), (u0_1, w00), (v01, -w00), (w01, v00)], [x]) ]
+NT,T=findCL(Hw,P0=[],base=[u0_0,u1_0,u0_1,u1_1,u0_2],degree=2) # NT+T is a basis of all polynomial C.L.s (density-flux pairs) of degree <=2 in the given base of variables
+
+Changing the first initial condition to u_t(0,x)=C*exp(-x^2) (C arbitrary constant)
+
+_=initvar(['t','x'],['u','v','w','h','s'],maxder=1,extrader={'u':':3_(:3)'})  # h=C*exp(-x^2), s=x+D (C,D arbitrary constants)
+Hw=[([(u2_0, u0_2),   (v10, 0),   (w10, 0), (h10, 0), (s10,0)], [t, x]),
+    ([(u1_0, h00), (u0_1, w00), (v01, -w00), (w01, v00), (h01, -h00*2*s00), (s01,1)], [x]) ]
+NT,T=findCL(Hw,P0=[s00],base=[u0_0,u1_0,u0_1,u1_1,u0_2],degree=2) 
 
 
 ########## ADDITIONAL EXAMPLES ###################################################################
 
-4) ONE- AND TWO-VARIABLE TRIGONOMETRIC FUNCTIONS
+5) ONE- AND TWO-VARIABLE TRIGONOMETRIC FUNCTIONS
 Here f=cos(x+y), g=sin(x+y), i=cos(x), j=sin(x), h=cos(y), k=sin(y)
 
 xtri=initvar(['x','y'],['f','g','i','j','h','k'],maxder=1)
@@ -136,14 +166,14 @@ eqtr=[(f10,-g00), (f01,-g00), (g10,f00), (g01,f00), (i10,-j00), (i01,0), (j10,i0
 Htr=[(eqtr,[x,y])]
 pt,pl=genpt([f00, g00, i00, j00, h00, k00],2) # f=cos(x+y), g=sin(x+y), i=cos(x), j=sin(x), h=cos(y), k=sin(y)
 P0=[f00-1, g00, i00-1, j00, h00-1, k00]
-qt,J=DC(pt,Htr,P0,pl)
-Poly(qt/1,pl)/1    # pretty printing of result template
+qt,J=post(pt,Htr,P0,pl)
+Poly(qt,pl)/1    # pretty printing of result template
 sigma={f00:cos(x+y), g00:sin(x+y), i00:cos(x), j00:sin(x), h00:cos(y), k00:sin(y)}
 tridlist=[term.subs(sigma) for term in list(Poly(qt/1,pl).as_dict().values())]    # all trigonometric laws of degree <=2 (with the above positions f=cos(x+y) etc.)
 print(tridlist)
 
 
-5) WAVE EQUATION
+6) WAVE EQUATION
 u_tt =b*u_xx 
 u_t(0,x)=0       # initial condition 1
 u(0,x)=sin(c*x)  # initial condition 2
@@ -179,12 +209,12 @@ Hw=[([(u2_0, b00**2*u0_2),
 P0 = [a00, f00-1,g00]
 a1,e,l=var('a1,e,l')  # dummy variables
 pt=a1*a00*(u0_0+i00*h0_0*k0_0)
-_,J=DC(pt,Hw,P0,[a1])
+_,J=post(pt,Hw,P0,[a1])
 J1=GroebnerBasis(list(J)+[a00-1,f00-1,g00,c00*e-1,b00*l-1],Xlist+[e,l],domain='QQ',order='grevlex')  # build a set of new equations with specific values for a00,f00,g00,h00 and c00!=0
 solve(J1,[r00,s00,i00,e,l],dict=True)  # This gives all possible nontrivial solutions
  
  
-6) KdV 
+7) KdV 
 u_t+u*u_x+u_xxx = 0
 u(0,x)=c*x+b   # initial condition
 
@@ -197,11 +227,11 @@ Hkdv2=[(E1,[t,x]), (E3,[x])]
 P0=[u0_0-b00]
 P1=[u0_0-1]
 pt,pl=genpt([u0_0,u0_1,u1_0,u1_1],2)
-qt,J=DC(pt,Hkdv,P0,pl)
-Poly(qt/1,pl)/1  # pretty printing of qt, gives all valid polynomial equations of degree <= 2 for the considered variables.
+qt,J=post(pt,Hkdv,P0,pl)
+Poly(qt,pl)/1  # pretty printing of qt, gives all valid polynomial equations of degree <= 2 for the considered variables.
 
 
-7) Boundary problem n. 2
+8) Boundary problem n. 2
 (u+2*y)*u_x+u*u_y=0
 u(x,1)=1/x 
 
@@ -211,11 +241,11 @@ S2=[(x10,1),(y10,0),(z10,-z00**2)]
 HC2=[(S1,[r,s]),(S2,[r])]
 P0=[x00-1,y00-1,z00-1]
 pt,pl=genpt([x00,y00,z00],2)
-qt,J=DC(pt,HC2,P0,pl)
-solve(Poly(qt/1,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
+qt,J=post(pt,HC2,P0,pl)
+solve(Poly(qt,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
 
 
-8) Boundary problem n. 3
+9) Boundary problem n. 3
 (y+u)*u_x+y*u_y=x-y
 u(x,1)=1+x
 
@@ -225,8 +255,8 @@ S2=[(x01,1),(y01,0),(z01,1)]
 HC3=[(S1,[t,s]),(S2,[s])]
 P0=[x00,y00-1,z00-1]
 pt,pl=genpt([x00,y00,z00],2)
-qt,J=DC(pt,HC3,P0,pl)
-solve(Poly(qt/1,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
+qt,J=post(pt,HC3,P0,pl)
+solve(Poly(qt,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
 
 ####################################################################################################
 """
@@ -244,16 +274,30 @@ global D
 global DI
 global NIND
 global Xlist
- 
+
+from contextlib import contextmanager
+import sys, os
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:  
+            yield
+        finally:
+            sys.stdout = old_stdout
+            
 
 maxiter = 60
 
-def genpt(Xlist,deg):
+def genpt(Xlist,deg,offset=0):
     monlist=list(itm(Xlist,deg))
     l=len(monlist)
-    parlist = list(var('a%d' % j) for j in range(l))
+    parlist = list(var('a%d' % j) for j in range(offset,l+offset))
     prod=(Matrix(monlist).T *Matrix(parlist))[0,0]
     return prod, parlist
+
 
 def linind(list,p):     # stub: should check linear independence of p from res
     return not(p==0)
@@ -358,16 +402,16 @@ def checkinvariance(J):  # ex-post invariance check: S_H(delta(pt_tau,x)[v]) in 
 
     
     
-def DC(pt,Huser,P,Plist,Monotony=False):   
+def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):   
     start_time = time.time()
     global D, DI, NIND, HT, Xlist, H, zeropar,Xpar
     H=ext2int(Huser) 
-    pt=Poly(pt/1,Xlist)
+    pt=Poly(pt,Xlist)
     Xind=Xlist[:NIND]
     zeroind={x:0 for x in Xind}
     Xpar=parvar(H)
-    G0=groebner(P,Xlist[:NIND]+Plist+Xpar,order='lex',domain='QQ')#field=True)  
-    print('Groebner basis for <P0 U X> = ',Xlist[:NIND]+[p/1 for p in list(G0)])
+    G0=groebner(P,Plist+Xpar,order='lex',domain='QQ')#field=True)  
+    print('Groebner basis for <P0> = ',[p/1 for p in list(G0)])
     print("Search will proceed by exploring derivatives of increasing order of input template pt (\"levels\")")
     print("")
     if Monotony:
@@ -386,11 +430,8 @@ def DC(pt,Huser,P,Plist,Monotony=False):
     if Monotony:
         print('  Frontier=',border)
     print('  tau   =1')
-    #print("pt0  =                   ",pt/1)
-    #print("qt0  = S_H(pt0) =        ",qt/1)
-    #print("rt0  = S_H(pt0) mod J  = ",rt/1)
 
-    coeffs = Poly(rt/1,Xpar).coeffs() # list of linear expressions (constraints) extracted as coefficients of rt    
+    coeffs = Poly(rt,Xpar).coeffs() # list of linear expressions (constraints) extracted as coefficients of rt    
     sigma=[]    # list of individual substitutions for parameters 
     for lin in coeffs:      # solve the list of linear constraints, one by one
         lin= (seqsub(sigma,lin))  # apply previously accumulated subst. to current constraint lin
@@ -411,7 +452,9 @@ def DC(pt,Huser,P,Plist,Monotony=False):
             if type(s)==dict:
                 sigma=sigma+[s]
             else:
-                sigma=sigma+[{list(lin.free_symbols)[0]:s}]                                      # append s to list of substitutions
+                sigma=sigma+[{list(lin.free_symbols)[0]:s}]
+    if extraptlist!=None:
+        extraptlist=[Poly(seqsub(sigma,qtt),Xlist) for qtt in extraptlist]                                      # append s to list of substitutions
     print("  New linear constraint for V_0: "+str(sigma))        
 
     pt=Poly(seqsub(sigma,pt),Xlist)   # apply sigma to pt
@@ -433,24 +476,28 @@ def DC(pt,Huser,P,Plist,Monotony=False):
             m=nextordborder(m,border)
         else:
             m=nextordborder(m,[])
-        #m,newpt=nextder(m,H[0],border,Monotony)  # newpt = new total derivative of pt
         if m==None:
             print("Frontier =",border)
             print('No new derivative below frontier: both chains stabilized')
             print('You can check invariance of Jm, that is  S_H(pt_tau)[v] in Jm for each tau and v in Vm, by calling checkinvariance(Jm)')
             print('m='+str(oldeg))
-            #print('base=',base)
-            G = groebner(Xlist[:NIND]+base,Xlist[:NIND]+Xpar,order='lex',domain='QQ')
+            G = groebner(base,Xpar,order='lex',domain='QQ')
             print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
-            return (HT[(0,)*len(Xind)],G) 
+            if extraptlist!=None:
+                return (HT[(0,)*len(Xind)],G,extraptlist) 
+            else:
+                return HT[(0,)*len(Xind)],G
         if (not(Monotony)):
             if ((sum(m)>oldeg) & (not(Monotony))):
                 if levelchecked:
                     print('Entire level checked: both chains stabilized')
                     print('m='+str(sum(m)))                    
-                    G = groebner(Xlist[:NIND]+base,Xlist[:NIND]+Xpar,order='grevlex',domain='QQ')
+                    G = groebner(base,Xpar,order='grevlex',domain='QQ')
                     print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
-                    return (HT[(0,)*len(Xind)],G)
+                    if extraptlist!=None:
+                        return (HT[(0,)*len(Xind)],G,extraptlist) 
+                    else:
+                        return HT[(0,)*len(Xind)],G
                 else:
                     levelchecked=True
         if sum(m)>oldeg:
@@ -458,22 +505,13 @@ def DC(pt,Huser,P,Plist,Monotony=False):
         if Monotony:
             print('  Frontier=',border)        
         print('  tau   =',Poly({m:1},Xind)/1)
-        #print('  Start nextder....')
         m,newpt=nextder(oldm,H[0],border,Monotony)  # newpt = new total derivative of pt
-        #print('  End nextder. Start onestepstarH')
-        timeH=time.time()
-        #print("pt"+str(j+1)+"= ",newpt/1) 
         qt=onestepstarHpt(newpt,H)   # qt=S_H(newpt) 
-        #print("--- End  onestepstarH: %s seconds ---" % (time.time() - timeH))
         if qt==0:
             rt=0
         else:
-            #print('  Start reduced(Poly(qt.subs(zeroind),Plist+Xpar),G0)...')
             _,rt=reduced(Poly(qt.subs(zeroind),Plist+Xpar,domain='QQ'),G0)     # rt= S_H(newpt) mod G0
-            #print('  End reduced(Poly(qt.subs(zeroind),Plist+Xpar),G0)')
-        #print("rt"+str(j+1)+"= ",rt/1)
-        coeffs = Poly(rt/1,Xpar).coeffs() # list of linear expressions (constraints) extracted as coefficients of rt    
-        #print('rt=',rt)        
+        coeffs = Poly(rt,Xpar).coeffs() # list of linear expressions (constraints) extracted as coefficients of rt      
         sigma=[]                                                
         for lin in coeffs:      # solve the list of linear constraints, one by one
             lin=seqsub(sigma,lin)  # apply previously accumulated subst. to current constraint lin
@@ -489,15 +527,12 @@ def DC(pt,Huser,P,Plist,Monotony=False):
                     print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
                     return False
             else:
-                #print('  Start Solve...')
                 C=solve(lin,list(lin.free_symbols),solution_dict=True,rational=True)      # solve one linear constraint lin
-                #print('  End Solve.')
                 s = C[0]
                 if type(s)==dict:
                     sigma=sigma+[s]
                 else:
                     sigma=sigma+[{list(lin.free_symbols)[0]:s}]                                      # append s to list of substitutions
-        print("  New linear constraint for V_"+str(sum(m))+": "+str(sigma))
 
         if sigma==[]:
             print("  No new linear constraint detected for V_"+str(sum(m)))
@@ -519,26 +554,26 @@ def DC(pt,Huser,P,Plist,Monotony=False):
                     print("  Equality does not hold, chains not yet stabilized; level not yet cleared")
                     levelchecked=False
                     base = base + newinst
-                    #print([term/1 for term in newinst])
             else:
                 updbase=False
             derlist.append(qt)
-            #base = base + newinst
         else:
+            print("  New linear constraint for V_"+str(sum(m))+": "+str(sigma))
             updbase=False
             levelchecked=False
-            derlist = [Poly(seqsub(sigma,qtt)/1,Xlist) for qtt in derlist]
+            derlist = [Poly(seqsub(sigma,qtt),Xlist) for qtt in derlist]
             for mon in HT.keys():
                 ptm=HT[mon]
-                HT[mon]=Poly(seqsub(sigma,ptm)/1,Xlist)
-            qt = Poly(seqsub(sigma,qt)/1,Xlist)
+                HT[mon]=Poly(seqsub(sigma,ptm),Xlist)
+            qt = Poly(seqsub(sigma,qt),Xlist)
             if qt!=0:
                 derlist.append(qt)
+            if extraptlist!=None:
+                extraptlist=[Poly(seqsub(sigma,qtt),Xlist) for qtt in extraptlist]
             freepar = freepar-set([ list(s.keys())[0] for s in sigma]) 
     print('m='+str(sum(m)))
     print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))    
-    return (HT[(0,)*len(Xind)],base,'WARNING: maximum number of iterations reached, result is likely to be not correct.')
-
+    return (HT[(0,)*len(Xind)],base,extraptlist,'WARNING: maximum number of iterations reached, result is likely to be not correct.')
 
 # generate dependent var, their derivatives and the corresponding dictionary and complete var list
 def initvar(indepX=['t','x'],dependU=['u'],maxder=4,extrader=None):  # indepX,dependU must be disjoint lists of chars; ex: extrader={'u':':11_(:3)'}
@@ -568,37 +603,7 @@ def initvar(indepX=['t','x'],dependU=['u'],maxder=4,extrader=None):  # indepX,de
     DI={tuple(D[k]):k for k in D.keys()}
     Xlist=var(indepX)+derlist    #symbols(indepX)+derlist#var(indepX)+derlist    
     return Xlist  
-    
-def myfunc():
-    exec('myvar="boooh!"', globals())
-    
-def initvarsage(indepX='t,u',dependU=['u'],maxder=4,extrader=None):  # indepX,dependU must be disjoint lists of chars; ex: extrader={'u':':11_(:3)'}
-    global D, DI, NIND, Xlist, derlist
-    NIND=int((len(indepX)+1)/2)
-    derlist=[]
-    for u in dependU:
-        if extrader!=None:
-            if u in extrader.keys():
-                dimstr=extrader[u]
-            else:
-                dimstr=('(:'+str(maxder+1)+')')*NIND
-        else:
-            dimstr=('(:'+str(maxder+1)+')')*NIND
-        exec('derlist=derlist+list(var(\''+u+dimstr+'\'))',globals())#derlist=derlist+list(var(u+dimstr))#(symbols(u+dimstr))
-    D={}
-    DI={}
-    for der in derlist:
-        derstr=str(der)
-        if extrader!=None:
-            if ((derstr[0] in extrader.keys()) & ('_' in derstr)):
-                D[NIND+derlist.index(der)]=[int(c) for c in derstr[1:].split('_')]+[derstr[0]]
-            else:
-                D[NIND+derlist.index(der)]=[int(c) for c in list(derstr[1:])]+[derstr[0]]
-        else:
-            D[NIND+derlist.index(der)]=[int(c) for c in list(derstr[1:])]+[derstr[0]]
-    DI={tuple(D[k]):k for k in D.keys()}
-    exec('Xlist=list(var(\''+indepX+'\'))+derlist',globals())    #symbols(indepX)+derlist#var(indepX)+derlist    
-    return Xlist  
+     
 
 def formeq(E):
     global Xlist
@@ -900,5 +905,74 @@ def frontier(S): # computes frontier of a set of downward closed monomial; S ord
     return F
             
 
+### Conservation laws
 
 
+def checknotzerotd(pair,t,x,Hsys,P0):
+    global  Xlist
+    pt=pair[0]
+    px=pair[1]
+    dpt=totalder(Poly(pt,Xlist),t)
+    dpx=totalder(Poly(px,Xlist),x)
+    if ((dpt==0)|(dpx==0)):
+        return False
+    if Poly(dpt+dpx,Xlist)==0:
+        return False
+    #print('dpt=',dpt)
+    res=post(dpt,Hsys,P0,[])
+    if res==False:
+        return True
+    #print('dpx=',dpx)
+    res=post(dpx,Hsys,P0,[])
+    if res==False:
+        return True
+    return False
+ 
+def checknottrivial(cp,t,x,Hsys,P0):
+    ntcp=[]
+    tcp=[]
+    for pair in cp:       
+        if checknotzerotd(pair,t,x,Hsys,P0):
+            ntcp.append(pair)
+        else:
+            if (pair[0],pair[1])!=(0,0):
+                tcp.append(pair)
+    return ntcp,tcp
+    
+
+
+def findCL(H,P0=[],base=None,ext=[],degree=2):
+    global Xlist
+    if base==None:
+        newbase=[u0_0,u1_0,u0_1,u1_1,u2_0,u0_2]
+    newbase=base+ext
+    ptt,plt=genpt(newbase,degree)
+    ptx,plx=genpt(newbase,degree,offset=len(plt))
+    t=Xlist[0]
+    x=Xlist[1]
+    Dt=totalder(Poly(ptt,Xlist),t)/1
+    Dx=totalder(Poly(ptx,Xlist),x)/1
+    qt,J,lc=post(Dt+Dx,H,P0,plt+plx,extraptlist=[ptt,ptx])
+    start_timefreepar = time.time()
+    print("   Starting calculation of free parameters left...")
+    Pt=lc[0]/1
+    Px=lc[1]/1
+    freepar= (Pt.free_symbols).union(Px.free_symbols).difference(set(Xlist))
+    #sigma0={a:0 for a in freepar}
+    print("   Elapsed time(freepar): %s seconds ---" % (time.time() - start_timefreepar))
+    start_timecc = time.time()
+    print("   Starting construction of conserved currents...")    
+    J=[]
+    Pt=Poly(Pt,freepar)
+    Px=Poly(Px,freepar)
+    zeroarg=[0]*len(freepar)
+    for j in range(len(freepar)):
+        sigmaj=zeroarg.copy()
+        sigmaj[j]=1
+        J.append((Pt(*sigmaj),Px(*sigmaj))  )
+    print("   Elapsed time(cc): %s seconds ---" % (time.time() - start_timecc))
+    #print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
+    print("   Filtering trivial laws...")
+    with suppress_stdout():
+        NT,T=checknottrivial(J,t,x,H,P0)
+    return NT,T
