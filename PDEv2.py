@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Last modified on February 14, 2020, 15:52
-
-PDE IVP, v.2.
+Last modified on February 15, 2020, 9:44
 
 @author: Michele Boreale
 
@@ -30,9 +28,9 @@ these will be accessible in the global variable Xlist; optional argument extrade
 
 qt,J = post(pt,H,P,Plist,Monotony=False)
 INPUT:
-pt = (autonomous) polynomial template (possibly defined with genpt, see examples)
-H  = list of (autonomous) subsystems, defining the coherent, afp (cf. paper), stratified system (boundary problem) to analyse. *NB: coherence is not checked!*
-P  = list of (autonomous) polynomials, defining the variety V(P) of initial conditions. 
+pt = polynomial template (possibly defined with genpt, see examples)
+H  = list of subsystems, defining the coherent (cf. paper), stratified system (boundary problem) to analyse. *NB: coherence is not checked!*
+P  = list of polynomials, defining the variety V(P) of initial conditions. 
 Plist = list of parameters appearing in pt
 Monotony = True: monotonic search optimization will be used, leading to a more efficient algorithm. 
            This is *heuristic*.
@@ -43,7 +41,6 @@ qt = result template with s parameters. The set of instantiations of qt, qt[R^s]
      a real radical)
 J =  (Groebner basis of the) ideal defining the weakest  precondition of qt[R^s].
 If maxiter iterations are exceeded, the execution stops with a warning.
-
 
 OTHER useful functions.
 pt,pl=genpt(vars,n)  : generates the complete polynomial template pt of total degree n 
@@ -68,6 +65,10 @@ NT,T=findCL(H,P0=[],base=[],degree=2) : NT (nontrivial) + T (trivial) is a basis
 - A subsystem C is a pair (S,Y), with S a system and Y a list of independent variables.
 - A stratified system H is a list of subsystems [C1,..,Cm]. Here C1 must be the only main subsystem.
 
+NOTE: independent variables x,y,... appearing in the user input (pt,H,P) are automatically translated 
+to dependent variables satisfying the equations x_x=1, x_y=0 (for x!=0) etc. and the initial 
+conditions x=0, y=0 etc.
+
 ########## EXAMPLES IN THE PAPER ###################################################################
 
 1) INVISCID BURGERS' EQUATION
@@ -78,15 +79,15 @@ u(0,x)=c*x+b
 We want to find all valid polynomial postconditions of total degree <=3. 
 Try the following snippet.
 
-_=initvar(['t','x'],['c','b','u','s','r'],maxder=1) # s=t, r=x
-eq1b=[(u10,-u00*u01),(b10,0),(c10,0),(c01,0),(s10,1),(s01,0), (r10,0), (r01,1)]
+_=initvar(['t','x'],['c','b','u'],maxder=1)
+eq1b=[(u10,-u00*u01),(b10,0),(c10,0),(c01,0)]
 eq2b=[(u01,b00),(b01,0)]
 C1b=(eq1b,[t,x])
 C2b=(eq2b,[x])
 Hb=[C1b,C2b]  
-P0b=[u00-c00,s00,r00]
-pvb=[c00, b00, u00, s00, r00]
-pt,pl=genpt(pvb,3)  # generates complete polynomial template of total degree 3 with indeterminates {t,x,c, b, u}
+P0b=[u00-c00]
+pvb=[t,x,c00, b00, u00]
+pt,pl=genpt(pvb,3)  # generates complete polynomial template of total degree 3 with indeterminates {t,x,b,c,u}
 qt,J=post(pt,Hb,P0b,pl)
 Poly(qt,pl)/1        # pretty printing of qt. Setting the only parameter of qt to 1 yields the equation u(t,x)=(c*x+b)/(c*t+1)
 solve(qt,[u00],dict=True)   # finds an explicit formula for the solution u
@@ -137,7 +138,7 @@ HC=[(S1,[r,s]),(S2,[r])]
 P0=[z00,x00-1,y00,p00-1,q00]
 pt,pl=genpt([x00,y00,z00],2)
 qt,J=post(pt,HC,P0,pl)
-solve(Poly(qt/1,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
+solve(Poly(qt,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for the solution z=u
 
 
 4) CONSERVATION LAWS FOR A WAVE EQUATION IVP
@@ -148,12 +149,12 @@ Hw=[([(u2_0, u0_2),   (v10, 0),   (w10, 0)], [t, x]),
     ([(u1_0, 0), (u0_1, w00), (v01, -w00), (w01, v00)], [x]) ]
 NT,T=findCL(Hw,P0=[],base=[u0_0,u1_0,u0_1,u1_1,u0_2],degree=2) # NT+T is a basis of all polynomial C.L.s (density-flux pairs) of degree <=2 in the given base of variables
 
-Changing the first initial condition to u_t(0,x)=C*exp(-x^2) (C arbitrary constant)
+Changing the first intial condition to u_t(0,x)=C*exp(-x^2) (C arbitrary constant)
 
-_=initvar(['t','x'],['u','v','w','h','s'],maxder=1,extrader={'u':':3_(:3)'})  # h=C*exp(-x^2), s=x+D (C,D arbitrary constants)
-Hw=[([(u2_0, u0_2),   (v10, 0),   (w10, 0), (h10, 0), (s10,0)], [t, x]),
-    ([(u1_0, h00), (u0_1, w00), (v01, -w00), (w01, v00), (h01, -h00*2*s00), (s01,1)], [x]) ]
-NT,T=findCL(Hw,P0=[s00],base=[u0_0,u1_0,u0_1,u1_1,u0_2],degree=2) 
+_=initvar(['t','x'],['u','v','w','h'],maxder=1,extrader={'u':':3_(:3)'})
+Hw=[([(u2_0, u0_2),   (v10, 0),   (w10, 0), (h10, 0)], [t, x]),
+    ([(u1_0, h00), (u0_1, w00), (v01, -w00), (w01, v00), (h01, -h00*2*x)], [x]) ]
+NT,T=findCL(Hw,P0=[],base=[u0_0,u1_0,u0_1,u1_1,u0_2],degree=2) 
 
 
 ########## ADDITIONAL EXAMPLES ###################################################################
@@ -410,8 +411,8 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
     Xind=Xlist[:NIND]
     zeroind={x:0 for x in Xind}
     Xpar=parvar(H)
-    G0=groebner(P,Plist+Xpar,order='lex',domain='QQ')#field=True)  
-    print('Groebner basis for <P0> = ',[p/1 for p in list(G0)])
+    G0=groebner(Xind+P,Plist+Xind+Xpar,order='lex',domain='QQ')#field=True)  
+    print('Groebner basis for <P0 U X> = ',Xlist[:NIND]+[p/1 for p in list(G0)])
     print("Search will proceed by exploring derivatives of increasing order of input template pt (\"levels\")")
     print("")
     if Monotony:
@@ -424,7 +425,7 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
     if qt==0:
         rt=0
     else:
-        _,rt=reduced(Poly(qt.subs(zeroind),Plist+Xpar,domain='QQ'),G0)  # rt used to extract linear constraints for membership in JR
+        _,rt=reduced(Poly(qt.subs(zeroind),Plist+Xind+Xpar,domain='QQ'),G0)  # rt used to extract linear constraints for membership in JR
     border=[]
     print('*** Level m=0 ***')
     if Monotony:
@@ -481,10 +482,10 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
             print('No new derivative below frontier: both chains stabilized')
             print('You can check invariance of Jm, that is  S_H(pt_tau)[v] in Jm for each tau and v in Vm, by calling checkinvariance(Jm)')
             print('m='+str(oldeg))
-            G = groebner(base,Xpar,order='lex',domain='QQ')
+            G = groebner(Xind+base,Xind+Xpar,order='lex',domain='QQ')
             print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
             if extraptlist!=None:
-                return (HT[(0,)*len(Xind)],G,extraptlist) 
+                return HT[(0,)*len(Xind)],G,extraptlist 
             else:
                 return HT[(0,)*len(Xind)],G
         if (not(Monotony)):
@@ -492,10 +493,10 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
                 if levelchecked:
                     print('Entire level checked: both chains stabilized')
                     print('m='+str(sum(m)))                    
-                    G = groebner(base,Xpar,order='grevlex',domain='QQ')
+                    G = groebner(Xind+base,Xind+Xpar,order='grevlex',domain='QQ')
                     print("--- Elapsed time: %s seconds ---" % (time.time() - start_time))
                     if extraptlist!=None:
-                        return (HT[(0,)*len(Xind)],G,extraptlist) 
+                        return HT[(0,)*len(Xind)],G,extraptlist 
                     else:
                         return HT[(0,)*len(Xind)],G
                 else:
@@ -510,7 +511,7 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
         if qt==0:
             rt=0
         else:
-            _,rt=reduced(Poly(qt.subs(zeroind),Plist+Xpar,domain='QQ'),G0)     # rt= S_H(newpt) mod G0
+            _,rt=reduced(Poly(qt.subs(zeroind),Plist+Xlist[:NIND]+Xpar,domain='QQ'),G0)     # rt= S_H(newpt) mod G0
         coeffs = Poly(rt,Xpar).coeffs() # list of linear expressions (constraints) extracted as coefficients of rt      
         sigma=[]                                                
         for lin in coeffs:      # solve the list of linear constraints, one by one
@@ -976,4 +977,3 @@ def findCL(H,P0=[],base=None,ext=[],degree=2):
     with suppress_stdout():
         NT,T=checknottrivial(J,t,x,H,P0)
     return NT,T
-
