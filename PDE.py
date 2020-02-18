@@ -79,13 +79,13 @@ We want to find all valid polynomial postconditions of total degree <=3.
 Try the following snippet.
 
 _=initvar(['t','x'],['c','b','u'],maxder=1)
-eq1b=[(u10,-u00*u01),(b10,0),(c10,0),(c01,0)]
-eq2b=[(u01,b00),(b01,0)]
+eq1b=[(u10,-u00*u01),(c10,0),(b10,0),(b01,0)]
+eq2b=[(u01,c00),(c01,0)]
 C1b=(eq1b,[t,x])
 C2b=(eq2b,[x])
 Hb=[C1b,C2b]  
-P0b=[u00-c00]
-pvb=[t,x,c00, b00, u00]
+P0b=[u00-b00]
+pvb=[t,x,b00,c00,u00]
 pt,pl=genpt(pvb,3)  # generates complete polynomial template of total degree 3 with indeterminates {t,x,b,c,u}
 qt,J=post(pt,Hb,P0b,pl)
 Poly(qt,pl)/1        # pretty printing of qt. Setting the only parameter of qt to 1 yields the equation u(t,x)=(c*x+b)/(c*t+1)
@@ -416,7 +416,7 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
         print("Stops as soon as there is no monomial left to explore below the frontier.")
         print("*Warning*: monotonic search optimization is heuristic; actual invariance of obtained ideal Jm (see below) can be checked ex-post by calling checkinvariance(Jm).")
     print("")
-    qt=onestepstarHpt(pt,H).subs(zeroind)       # compute S_H(pt_0)
+    qt=onestepstarHpt(pt,H).subs(zeroind)        # compute S_H(pt_0)
     if qt==0:
         rt=0
     else:
@@ -503,7 +503,7 @@ def post(pt,Huser,P,Plist,Monotony=False,extraptlist=None):
             print('  Frontier=',border)        
         print('  tau   =',Poly({m:1},Xind)/1)
         m,newpt=nextder(oldm,H[0],border,Monotony)  # newpt = new total derivative of pt
-        qt=onestepstarHpt(newpt,H).subs(zeroind)   # qt=S_H(newpt) 
+        qt=onestepstarHpt(newpt,H).subs(zeroind)    # qt=S_H(newpt) 
         if qt==0:
             rt=0
         else:
@@ -738,7 +738,8 @@ def onestepstar(p,C): # important, p MUST be a polynomial with Xlist as generato
         p=q
                 
 def onestepH(p,H): # important, p MUST be a polynomial with Xlist as generators
-    global NIND, Xlist
+    global NIND, Xlist, zeroind
+    #p=p.subs(zeroind)
     for C in H:
         q=onestepstar(p,C)
         if q!=p:
