@@ -71,7 +71,7 @@ NT,T=findCL(H,P0=[],base=[],degree=2) :
 ########## EXAMPLES IN THE PAPER ###################################################################
 
 1) INVISCID BURGERS' EQUATION
-A nonlinear equation plus a linear boundary condition at t=0. For generic real constants c,b:
+A nonlinear equation plus a linear initial condition at t=0. For generic real constants c,b:
 u_t(t,x) = -u(t,x)*u_x(t,x)
 u(0,x)=c*x+b
 
@@ -139,7 +139,7 @@ solve(Poly(qt,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for th
 ########## ADDITIONAL EXAMPLES ###################################################################
 
 4) HEAT EQUATION
-Heat equation in 1 spatial dimension, with a generic sinusoidal boundary condition at t=0 (b,c real constants): 
+Heat equation in 1 spatial dimension, with a generic sinusoidal initial condition at t=0 (b,c real constants): 
 u_t(t,x)=b*u_xx(t,x)
 u(0,x)=sin(c*x)
 
