@@ -13,7 +13,8 @@ Given a set of PDE systems ("stratified system"), the POST algorithm computes (w
 preconditions and (strongest) postconditions as specified below (subject to certain restrictions; 
 see paper).
 
-Code tested under the Python Anaconda distribution for Windows 10.
+Code tested under the Python 3.5 Anaconda distribution for Windows 10.
+IMPORTANT: in Spyder >3.5, check "Run in console's namespace instead of an empty one" in Tools/Preferences/Run (see screenshot on main page)
 
 ########## USAGE ###################################################################################
 
@@ -221,7 +222,13 @@ solve(Poly(qt,pl).coeffs(),[z00],dict=True)   # finds an explicit formula for th
 
 ####################################################################################################
 """
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
 
 
 from sympy  import *
