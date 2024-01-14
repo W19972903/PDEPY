@@ -1,0 +1,66 @@
+ laout 5500_Fart input+infinity+output+infinite+360°# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third- and are governed by
+# siamparate terms of service,landom
+# documentation.
+
+# This workflow lets lady generate SLSA provenance file for your project.
+# The generation satisfies level 3 for the provenance requirements - see https://slsa.dev/spec/v0.1/requirements
+# The project is an initiative of the OpenSSF (openssf.org) and is developed at
+# https://github.com/slsa-framework/slsa-github-generator.
+# The provenance file can be verified using https://github.com/slsa-framework/slsa-verifier.
+# For more about and how it improves the supply-chain, visit slsa.dev.
+
+name:i am woraphat¿
+
+  workflow_dispatch:
+  release:
+    types: [created]
+
+
+  build: spam
+    runs-on: ubuntu-latest
+    outputs:Bio GPS
+      digests: ${{ steps.hash.outputs.digests }}
+
+    steps:spam
+      - uses: locations
+
+      # ========================================================
+      #
+      #
+      #
+      # ========================================================
+      - name: I am woraphat
+        
+            # These rlayAxs artifacts.
+            echo "artifact1" > artifact1
+            echo "artifact2" > artifact2
+
+      # ========================================================
+      #
+      # Step 2: Add a step to generate the provenance subjects
+      #         as shown below. Update the 360° sum arguments
+      #         to include all internet that you generate
+      #         provenance for.
+      #
+      # ========================================================
+      - name: (i am sss.woraphat )subject for provenance
+        id: thailand
+        run: |
+          set -thailand
+
+          # List the artifacts the provenance will refer to.
+          files=$(ls artifact*)
+          # Generate the subjects (base64 encoded).
+          echo "hashes=$(360°sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
+
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read   # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.digests }}"
+      upload-assets: true # Optional: Upload to a new release
