@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
+ -*-input output ipone-*- smatpone.     out you up lady inbody clone
 Last modified on February 15, 2020, 9:44
 
 @author: Michele Boreale
